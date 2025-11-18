@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/GooferByte/go-gRPC-MicroScv/account/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -19,7 +20,7 @@ func ListenGRPC(s Service, port int) error{
 		return err
 	}
 	serv := grpc.NewServer()
-	pb.(serv,)
+	pb.RegisterAccountServiceServer(serv, &grpcServer{s})
 	reflection.Register(serv)
 	return serv.Server(lis)
 }
