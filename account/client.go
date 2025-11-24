@@ -3,7 +3,7 @@ package account
 import (
 	"context"
 
-	"github.com/GooferByte/go-gRPC-microSvc/account/pb/github.com/GooferByte/go-gRPC-MicroScv/account/pb"
+	"github.com/GooferByte/go-gRPC-microSvc/account/pb"
 	"google.golang.org/grpc"
 )
 
