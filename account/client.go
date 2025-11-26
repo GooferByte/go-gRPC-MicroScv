@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type Server struct {
+type Client struct {
 	conn    *grpc.ClientConn
 	service pb.AccountServiceClient
 }
@@ -17,7 +17,7 @@ func NewClient(url string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	C := pb.NewAccountServiceClient(conn)
+	c := pb.NewAccountServiceClient(conn)
 	return &Client{conn, c}, nil
 }
 
@@ -56,8 +56,8 @@ func (c *Client) GetAccount(ctx context.Context, id string) (*Account, error) {
 func (c *Client) GetAccounts(ctx context.Context, skip uint64, take uint64) ([]Account, error) {
 	r, err := c.service.GetAccounts(
 		ctx,
-		*pb.GetAccountRequest{
-			skip: skip,
+		&pb.GetAccountsRequest{
+			Skip: skip,
 			Take: take,
 		},
 	)
@@ -65,7 +65,7 @@ func (c *Client) GetAccounts(ctx context.Context, skip uint64, take uint64) ([]A
 		return nil, err
 	}
 	accounts := []Account{}
-	for _, a := range r.Account {
+	for _, a := range r.Accounts {
 		accounts = append(accounts, Account{
 			ID:   a.Id,
 			Name: a.Name,
