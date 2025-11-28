@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/GooferByte/go-gRPC-microSvc/account"
+	"github.com/GooferByte/go-gRPC-MicroSvc/account"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/tinrab/retry"
 )
@@ -21,8 +21,8 @@ func main() {
 	}
 
 	var r account.Repository
-	retry.FoeverSleep(2*time.Second, func(_ int) (err error) {
-		r, err = account.NewPostgresRepository(cgf.DatabaseURL)
+	retry.ForeverSleep(2*time.Second, func(_ int) (err error) {
+		r, err = account.NewPostgresRepository(cfg.DatabaseURL)
 		if err != nil {
 			log.Println(err)
 		}

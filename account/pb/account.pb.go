@@ -304,7 +304,7 @@ func (x *GetAccountsRequest) GetTake() uint64 {
 
 type GetAccountsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Account       []*Account             `protobuf:"bytes,1,rep,name=account,proto3" json:"account,omitempty"`
+	Accounts      []*Account             `protobuf:"bytes,1,rep,name=account,proto3" json:"account,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -341,7 +341,7 @@ func (*GetAccountsResponse) Descriptor() ([]byte, []int) {
 
 func (x *GetAccountsResponse) GetAccount() []*Account {
 	if x != nil {
-		return x.Account
+		return x.Accounts
 	}
 	return nil
 }
