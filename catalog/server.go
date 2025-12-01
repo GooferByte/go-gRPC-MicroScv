@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/GooferByte/go-gRPC-MicroScv/pb"
+	"github.com/GooferByte/go-gRPC-MicroSvc/catalog/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
