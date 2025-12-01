@@ -6,8 +6,6 @@ import (
 	"errors"
 	"log"
 
-	"github.com/googleapis/enterprise-certificate-proxy/client"
-	"gonum.org/v1/gonum/graph/product"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 
@@ -50,15 +48,15 @@ func (r *elasticRepository) Close() {
 }
 
 func (r *elasticRepository) PutProduct(ctx context.Context, p Product) error {
-	_, err := r.client.Index(),
+	_, err := r.client.Index().
 		Index("catalog").
-			Type("product").
-			Id(p.ID).
-			BodyJson(productDocument{
-				Name:        p.Name,
-				Description: p.Description,
-				Price:       p.Price,
-			}),
+		Type("product").
+		Id(p.ID).
+		BodyJson(productDocument{
+			Name:        p.Name,
+			Description: p.Description,
+			Price:       p.Price,
+		}),
 		Do(ctx)
 	return err
 
@@ -100,14 +98,14 @@ func (r *elasticRepository) ListProducts(ctx context.Context, skip uint64, take 
 		return nil, err
 	}
 	products := []Product{}
-	for _, hit := range res.Hits.Hits{
+	for _, hit := range res.Hits.Hits {
 		p := productDocument{}
-		if err = json.Unmarshal(*hit.Source, &p); err ==nil {
+		if err = json.Unmarshal(*hit.Source, &p); err == nil {
 			products = append(products, Product{
-				ID: hit.Id,
-				Name: p.Name,
+				ID:          hit.Id,
+				Name:        p.Name,
 				Description: p.Description,
-				Price: p.Price,
+				Price:       p.Price,
 			})
 		}
 	}
@@ -116,7 +114,7 @@ func (r *elasticRepository) ListProducts(ctx context.Context, skip uint64, take 
 
 func (r *elasticRepository) ListProductsWithIDs(ctx context.Context, ids []string) ([]Product, error) {
 	items := []*elastic.MultiGetItem{}
-	for _, id := range ids{
+	for _, id := range ids {
 		items = append(
 			items,
 			elastic.NewMutiGetItem().
@@ -133,14 +131,14 @@ func (r *elasticRepository) ListProductsWithIDs(ctx context.Context, ids []strin
 		return nil, err
 	}
 	product := []Product{}
-	for _, doc := range res.Docs{
+	for _, doc := range res.Docs {
 		p := productDocument{}
 		if err = json.Unmarshal(*doc.Source, &p); err == nil {
 			products = append(products, Product{
-				ID: doc.Id,
-				Name: p.Name,
+				ID:          doc.Id,
+				Name:        p.Name,
 				Description: p.Description,
-				Price: p.Price,
+				Price:       p.Price,
 			})
 		}
 	}
@@ -159,14 +157,14 @@ func (r *elasticRepository) SearchProducts(ctx context.Context, query string, sk
 		return nil, err
 	}
 	products := []Product{}
-	for _, hit := range res.Hits.Hits{
+	for _, hit := range res.Hits.Hits {
 		p := productDocument{}
-		if err = json.Unmarshal(*hit.Source, &p); err == nil{
+		if err = json.Unmarshal(*hit.Source, &p); err == nil {
 			products = append(products, Product{
-				ID: hit.Id,
-				Name: p.Name,
+				ID:          hit.Id,
+				Name:        p.Name,
 				Description: p.Description,
-				Price: p.Price,
+				Price:       p.Price,
 			})
 		}
 	}

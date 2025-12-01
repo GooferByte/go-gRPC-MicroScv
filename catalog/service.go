@@ -1,46 +1,65 @@
- 
+package catalog
 
- import ()
+import (
+	"context"
 
- type Service interface{
+	"github.com/segmentio/ksuid"
+)
+
+type Service interface {
 	PostProduct(ctx context.Context, name, description string, price float64) (*Product, error)
 	GetProduct(ctx context.Context, id string) (*Product, error)
 	GetProducts(ctx context.Context, skip uint64, take uint64) ([]Product, error)
-	GetProducstByID(ctx context.Context, ids []string)([]Product, error)
-	SearchProducts(ctx context.Context, query string, skip uint64, take uint64)	([]Product, error)
- }
+	GetProducstByID(ctx context.Context, ids []string) ([]Product, error)
+	SearchProducts(ctx context.Context, query string, skip uint64, take uint64) ([]Product, error)
+}
 
- typr Product struct{
-	ID			string		`json:"id`
-	Name		string		`json:"name"`
-	Description	string		`json:description`
-	Price		string		`json:price`
- }
+type Product struct {
+	ID          string `json:"id`
+	Name        string `json:"name"`
+	Description string `json:description`
+	Price       string `json:price`
+}
 
- type catalogService struct{
+type catalogService struct {
 	repository Repository
- }
+}
 
- func NewService(r Repository) Service{
+func NewService(r Repository) Service {
 	return &catalogService{r}
- }
+}
 
- func (s *catalogService) PostProduct(ctx context.Context, name, description string, price float64) (*Product, error){
+func (s *catalogService) PostProduct(ctx context.Context, name, description string, price float64) (*Product, error) {
+	p := &Product{
+		Name:        name,
+		Description: description,
+		Price:       price,
+		ID:          ksuid.New().String(),
+	}
+	if err := s.repository.PutProduct(ctx, *p); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
 
- }
+func (s *catalogService) GetProduct(ctx context.Context, id string) (*Product, error) {
+	return s.repository.GetProducstByID(ctx, id)
+}
 
- func (s *catalogService) GetProduct(ctx context.Context, id string) (*Product, error){
+func (s *catalogService) GetProducts(ctx context.Context, skip uint64, take uint64) ([]Product, error) {
+	if take > 100 || (skip == 0 && take == 0) {
+		take = 100
+	}
+	return s.repository.ListProducts(ctx, skip, take)
+}
 
- }
+func (s *catalogService) GetProducstByIDs(ctx context.Context, ids []string) ([]Product, error) {
+	return s.repository.ListProductsWithIDS(ctx, ids)
+}
 
- func (s *catalogService) GetProducts(ctx context.Context, skip uint64, take uint64) ([]Product, error){
-
- }
-
- func (s *catalogService) GetProducstByIDs(ctx context.Context, ids []string)([]Product, error){
-
- }
-
- func (s *catalogService) SearchProducts(ctx context.Context, query string, skip uint64, take uint64)	([]Product, error){
-	
- }
+func (s *catalogService) SearchProducts(ctx context.Context, query string, skip uint64, take uint64) ([]Product, error) {
+	if take > 100 || (skip == 0 && take == 0) {
+		take = 100
+	}
+	return s.repository.SearchProducts(ctx, query, skip, take)
+}
