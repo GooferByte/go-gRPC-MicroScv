@@ -13,7 +13,7 @@ message Product {
 message PostProductRequest {
     string name = 1;
     string description  = 2;
-    string price    = 3;
+    double price    = 3;
 }
 
 message PostProductResponse {
@@ -43,7 +43,7 @@ service CatalogService {
     rpc PostProduct (PostProductRequest) returns (PostProductResponse){
 
     }
-    rpc GetProduct (GetProductsRequest) returns (GetProductsResponse){
+    rpc GetProduct (GetProductRequest) returns (GetProductResponse){
 
     }
     rpc GetProducts (GetProductsRequest) returns (GetProductsResponse){

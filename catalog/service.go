@@ -10,15 +10,15 @@ type Service interface {
 	PostProduct(ctx context.Context, name, description string, price float64) (*Product, error)
 	GetProduct(ctx context.Context, id string) (*Product, error)
 	GetProducts(ctx context.Context, skip uint64, take uint64) ([]Product, error)
-	GetProducstByID(ctx context.Context, ids []string) ([]Product, error)
+	GetProducstByIDs(ctx context.Context, ids []string) ([]Product, error)
 	SearchProducts(ctx context.Context, query string, skip uint64, take uint64) ([]Product, error)
 }
 
 type Product struct {
-	ID          string `json:"id`
-	Name        string `json:"name"`
-	Description string `json:description`
-	Price       string `json:price`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
 }
 
 type catalogService struct {
@@ -43,7 +43,7 @@ func (s *catalogService) PostProduct(ctx context.Context, name, description stri
 }
 
 func (s *catalogService) GetProduct(ctx context.Context, id string) (*Product, error) {
-	return s.repository.GetProducstByID(ctx, id)
+	return s.repository.GetProductByID(ctx, id)
 }
 
 func (s *catalogService) GetProducts(ctx context.Context, skip uint64, take uint64) ([]Product, error) {
@@ -54,7 +54,7 @@ func (s *catalogService) GetProducts(ctx context.Context, skip uint64, take uint
 }
 
 func (s *catalogService) GetProducstByIDs(ctx context.Context, ids []string) ([]Product, error) {
-	return s.repository.ListProductsWithIDS(ctx, ids)
+	return s.repository.ListProductsWithIDs(ctx, ids)
 }
 
 func (s *catalogService) SearchProducts(ctx context.Context, query string, skip uint64, take uint64) ([]Product, error) {

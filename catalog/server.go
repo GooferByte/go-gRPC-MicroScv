@@ -12,7 +12,7 @@ import (
 )
 
 type grpcServer struct {
-	pb.UnimplementedAccountServiceServer
+	pb.UnimplementedCatalogServiceServer
 	service Service
 }
 
@@ -22,8 +22,8 @@ func ListenGRPC(s Service, port int) error {
 		return err
 	}
 	serv := grpc.NewServer()
-	pb.RegisterAccountServiceServer(serv, &grpcServer{
-		UnimplementedAccountServiceServer: pb.UnimplementedAccountServiceServer{},
+	pb.RegisterCatalogServiceServer(serv, &grpcServer{
+		UnimplementedCatalogServiceServer: pb.UnimplementedCatalogServiceServer{},
 		service:                           s,
 	})
 	reflection.Register(serv)
@@ -45,7 +45,7 @@ func (s *grpcServer) PostProduct(ctx context.Context, r *pb.PostProductRequest) 
 }
 
 func (s *grpcServer) GetProduct(ctx context.Context, r *pb.GetProductRequest) (*pb.GetProductResponse, error) {
-	p, err := s.service.getProduct(ctx, r.Id)
+	p, err := s.service.GetProduct(ctx, r.Id)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -66,7 +66,7 @@ func (s *grpcServer) GetProducts(ctx context.Context, r *pb.GetProductsRequest) 
 	if r.Query != "" {
 		res, err = s.service.SearchProducts(ctx, r.Query, r.Skip, r.Take)
 	} else if len(r.Ids) != 0 {
-		res, err = s.service.GetProducstByID(ctx, r.Ids)
+		res, err = s.service.GetProducstByIDs(ctx, r.Ids)
 	} else {
 		res, err = s.service.GetProducts(ctx, r.Skip, r.Take)
 	}

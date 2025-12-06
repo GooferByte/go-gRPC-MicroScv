@@ -27,20 +27,20 @@ type elasticRepository struct {
 }
 
 type productDocument struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       string `json:"price"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
 }
 
 func NewElasticRepository(url string) (Repository, error) {
 	client, err := elastic.NewClient(
-		elastic.SetUrl(url),
+		elastic.SetURL(url),
 		elastic.SetSniff(false),
 	)
 	if err != nil {
 		return nil, err
 	}
-	return &elasticRepository(client), nil
+	return &elasticRepository{client}, nil
 }
 
 func (r *elasticRepository) Close() {
@@ -56,13 +56,13 @@ func (r *elasticRepository) PutProduct(ctx context.Context, p Product) error {
 			Name:        p.Name,
 			Description: p.Description,
 			Price:       p.Price,
-		}),
+		}).
 		Do(ctx)
 	return err
 
 }
 
-func (r *elasticRepository) GetProductByID(ctx contect.Context, id string) (*Product, error) {
+func (r *elasticRepository) GetProductByID(ctx context.Context, id string) (*Product, error) {
 	res, err := r.client.Get().
 		Index("catalog").
 		Type("product").
@@ -87,7 +87,7 @@ func (r *elasticRepository) GetProductByID(ctx contect.Context, id string) (*Pro
 }
 
 func (r *elasticRepository) ListProducts(ctx context.Context, skip uint64, take uint64) ([]Product, error) {
-	res, err := client.Search().
+	res, err := r.client.Search().
 		Index("catalog").
 		Type("product").
 		Query(elastic.NewMatchAllQuery()).
@@ -117,20 +117,20 @@ func (r *elasticRepository) ListProductsWithIDs(ctx context.Context, ids []strin
 	for _, id := range ids {
 		items = append(
 			items,
-			elastic.NewMutiGetItem().
+			elastic.NewMultiGetItem().
 				Index("catalog").
 				Type("product").
 				Id(id),
 		)
 	}
-	res, err := client.MultiGet().
+	res, err := r.client.MultiGet().
 		Add(items...).
 		Do(ctx)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	product := []Product{}
+	products := []Product{}
 	for _, doc := range res.Docs {
 		p := productDocument{}
 		if err = json.Unmarshal(*doc.Source, &p); err == nil {

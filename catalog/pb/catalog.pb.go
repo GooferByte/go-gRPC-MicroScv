@@ -94,7 +94,7 @@ type PostProductRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	Price         string                 `protobuf:"bytes,3,opt,name=price,proto3" json:"price,omitempty"`
+	Price         float64                `protobuf:"fixed64,3,opt,name=price,proto3" json:"price,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -143,11 +143,11 @@ func (x *PostProductRequest) GetDescription() string {
 	return ""
 }
 
-func (x *PostProductRequest) GetPrice() string {
+func (x *PostProductRequest) GetPrice() float64 {
 	if x != nil {
 		return x.Price
 	}
-	return ""
+	return 0
 }
 
 type PostProductResponse struct {
@@ -407,7 +407,7 @@ const file_catalog_proto_rawDesc = "" +
 	"\x12PostProductRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05price\x18\x03 \x01(\tR\x05price\"<\n" +
+	"\x05price\x18\x03 \x01(\x01R\x05price\"<\n" +
 	"\x13PostProductResponse\x12%\n" +
 	"\aproduct\x18\x01 \x01(\v2\v.pb.ProductR\aproduct\"#\n" +
 	"\x11GetProductRequest\x12\x0e\n" +
@@ -420,11 +420,11 @@ const file_catalog_proto_rawDesc = "" +
 	"\x03ids\x18\x03 \x03(\tR\x03ids\x12\x14\n" +
 	"\x05query\x18\x04 \x01(\tR\x05query\">\n" +
 	"\x13GetProductsResponse\x12'\n" +
-	"\bproducts\x18\x01 \x03(\v2\v.pb.ProductR\bproducts2\xd5\x01\n" +
+	"\bproducts\x18\x01 \x03(\v2\v.pb.ProductR\bproducts2\xd3\x01\n" +
 	"\x0eCatalogService\x12@\n" +
-	"\vPostProduct\x12\x16.pb.PostProductRequest\x1a\x17.pb.PostProductResponse\"\x00\x12?\n" +
+	"\vPostProduct\x12\x16.pb.PostProductRequest\x1a\x17.pb.PostProductResponse\"\x00\x12=\n" +
 	"\n" +
-	"GetProduct\x12\x16.pb.GetProductsRequest\x1a\x17.pb.GetProductsResponse\"\x00\x12@\n" +
+	"GetProduct\x12\x15.pb.GetProductRequest\x1a\x16.pb.GetProductResponse\"\x00\x12@\n" +
 	"\vGetProducts\x12\x16.pb.GetProductsRequest\x1a\x17.pb.GetProductsResponse\"\x00B\x04Z\x02./b\x06proto3"
 
 var (
@@ -454,10 +454,10 @@ var file_catalog_proto_depIdxs = []int32{
 	0, // 1: pb.GetProductResponse.product:type_name -> pb.Product
 	0, // 2: pb.GetProductsResponse.products:type_name -> pb.Product
 	1, // 3: pb.CatalogService.PostProduct:input_type -> pb.PostProductRequest
-	5, // 4: pb.CatalogService.GetProduct:input_type -> pb.GetProductsRequest
+	3, // 4: pb.CatalogService.GetProduct:input_type -> pb.GetProductRequest
 	5, // 5: pb.CatalogService.GetProducts:input_type -> pb.GetProductsRequest
 	2, // 6: pb.CatalogService.PostProduct:output_type -> pb.PostProductResponse
-	6, // 7: pb.CatalogService.GetProduct:output_type -> pb.GetProductsResponse
+	4, // 7: pb.CatalogService.GetProduct:output_type -> pb.GetProductResponse
 	6, // 8: pb.CatalogService.GetProducts:output_type -> pb.GetProductsResponse
 	6, // [6:9] is the sub-list for method output_type
 	3, // [3:6] is the sub-list for method input_type
