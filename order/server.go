@@ -1,14 +1,24 @@
 package order
 
 import (
-	"github.com/GooferByte/go-gRPC-MicroSvc/account"
-	"github.com/GooferByte/go-gRPC-MicroSvc/catalog"
+	"context"
+	"errors"
+	"fmt"
+	"log"
+	"net"
+
+	account "github.com/GooferByte/go-gRPC-MicroSvc/account"
+	catalog "github.com/GooferByte/go-gRPC-MicroSvc/catalog"
+	"github.com/GooferByte/go-gRPC-MicroSvc/order/pb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
-type grpcServer struct{
-	service	service
+type grpcServer struct {
+	pb.UnimplementedOrderServiceServer
+	service       Service
 	accountClient *account.Client
-	catalog.Client *catalog.Client
+	catalogClient *catalog.Client
 }
 
 func ListenGRPC(s Service, accountURL, catalogURL string, port int) error {
@@ -29,15 +39,16 @@ func ListenGRPC(s Service, accountURL, catalogURL string, port int) error {
 	}
 	serv := grpc.NewServer()
 	pb.RegisterOrderServiceServer(serv, &grpcServer{
-		s,
-		accountClient,
-		catalogClient,
+		UnimplementedOrderServiceServer: pb.UnimplementedOrderServiceServer{},
+		service:                         s,
+		accountClient:                   accountClient,
+		catalogClient:                   catalogClient,
 	})
 	reflection.Register(serv)
 	return serv.Serve(lis)
 }
 
-func (s *grpcServer) PostOrder(ctx context.Context, r *pb.PostOrderRequest) (*pb.PostOrderResponse, error){
+func (s *grpcServer) PostOrder(ctx context.Context, r *pb.PostOrderRequest) (*pb.PostOrderResponse, error) {
 	_, err := s.accountClient.GetAccount(ctx, r.AccountID)
 	if err != nil {
 		log.Println("Error getting account:", err)
@@ -51,16 +62,16 @@ func (s *grpcServer) PostOrder(ctx context.Context, r *pb.PostOrderRequest) (*pb
 		return nil, errors.New("products not foundß")
 	}
 	products := []OrderedProduct{}
-	for _, p := range orderedProducts{
+	for _, p := range orderedProducts {
 		product := OrderedProduct{
-			ID:	p.ID,
-			Quantity:	0,
-			Price:	p.Price,
-			Name:	p.Name,
-			Description:	p.Description,
+			ID:          p.ID,
+			Quantity:    0,
+			Price:       p.Price,
+			Name:        p.Name,
+			Description: p.Description,
 		}
-		for _, rp := range r.Products{
-			if rp.ProductId == p.ID{
+		for _, rp := range r.Products {
+			if rp.ProductId == p.ID {
 				product.Quantity = rp.Quantity
 			}
 		}
@@ -75,19 +86,19 @@ func (s *grpcServer) PostOrder(ctx context.Context, r *pb.PostOrderRequest) (*pb
 	}
 
 	orderProto := &pb.Order{
-		Id: order.ID,
-		AccountId: order.AccountID,
+		Id:         order.ID,
+		AccountId:  order.AccountID,
 		TotalPrice: order.TotalPrice,
-		Products: []*pb.Order_orderProduct{}
+		Products:   []*pb.Order_OrderProduct{},
 	}
 	orderProto.CreatedAt, _ = order.CreatedAt.MarshalBinary()
-	for _, p := range order.Products{
+	for _, p := range order.Products {
 		orderProto.Products = append(orderProto.Products, &pb.Order_OrderProduct{
-			Id:	p.ID,
-			Name:	p.Name,
-			Description:	p.Description,
-			Price:	p.Price,
-			Quantity:	p.Quantity,
+			Id:          p.ID,
+			Name:        p.Name,
+			Description: p.Description,
+			Price:       p.Price,
+			Quantity:    p.Quantity,
 		})
 	}
 	return &pb.PostOrderResponse{
@@ -95,7 +106,7 @@ func (s *grpcServer) PostOrder(ctx context.Context, r *pb.PostOrderRequest) (*pb
 	}, nil
 }
 
-func (s *grpcServer) GetOrderForAccount (ctx context.Context, r *pb.GetOrdersForAccountRequest) (*pb.GetOrdersForAccountResponse, error) {
+func (s *grpcServer) GetOrderForAccount(ctx context.Context, r *pb.GetOrdersForAccountRequest) (*pb.GetOrdersForAccountResponse, error) {
 	accountOrders, err := s.service.GetOrderForAccount(ctx, r.AccountId)
 	if err != nil {
 		log.Println(err)
@@ -103,8 +114,8 @@ func (s *grpcServer) GetOrderForAccount (ctx context.Context, r *pb.GetOrdersFor
 	}
 
 	productIDMap := map[string]bool{}
-	for _, o := range accountOrders{
-		for _, p := range o.Products{
+	for _, o := range accountOrders {
+		for _, p := range o.Products {
 			productIDMap[p.ID] = true
 		}
 	}
@@ -118,18 +129,18 @@ func (s *grpcServer) GetOrderForAccount (ctx context.Context, r *pb.GetOrdersFor
 		return nil, err
 	}
 	orders := []*pb.Order{}
-	for _, o := range accountOrders{
+	for _, o := range accountOrders {
 		op := &pb.Order{
-			AccountId:	o.AccountID,
-			Id: o.ID,
-			TotalPrice:	o.TotalPrice,
-			Protucts: []*pb.Order_OrderProduct{},	
+			AccountId:  o.AccountID,
+			Id:         o.ID,
+			TotalPrice: o.TotalPrice,
+			Protucts:   []*pb.Order_OrderProduct{},
 		}
 		op.CreatedAt, _ = O.createdAt.MarshalBinary()
 
-		for _, product := range o.Products{
-			for _, p := range products{
-				if p.ID == product.ID{
+		for _, product := range o.Products {
+			for _, p := range products {
+				if p.ID == product.ID {
 					product.Next = p.Name
 					product.Description = p.Description
 					product.Price = p.Price
@@ -137,11 +148,11 @@ func (s *grpcServer) GetOrderForAccount (ctx context.Context, r *pb.GetOrdersFor
 				}
 			}
 			op.Products = append(op.Products, &pb.Order_OrderProduct{
-				Id:	product.ID,
-				Name: product.Name,
+				Id:          product.ID,
+				Name:        product.Name,
 				Description: product.Description,
-				Price:	product.Price,
-				Quantity:	product.Quantity,
+				Price:       product.Price,
+				Quantity:    product.Quantity,
 			})
 		}
 		orders = append(orders, op)
