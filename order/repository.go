@@ -57,19 +57,22 @@ func (r *postgresRepository) PutOrder(ctx context.Context, o Order) (err error) 
 		return
 	}
 
-	stmt, _ := tx.PrepareContext(ctx, pq.CopyIn("order_products", "order_id", "product_id", "quantity"))
+	stmt, err := tx.PrepareContext(ctx, pq.CopyIn("order_products", "order_id", "product_id", "quantity"))
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
 	for _, p := range o.Products {
 		_, err = stmt.ExecContext(ctx, o.ID, p.ID, p.Quantity)
 		if err != nil {
 			return
 		}
 	}
-	_, err = stmt.ExecContext(ctx)
-	if err != nil {
+	if _, err = stmt.ExecContext(ctx); err != nil {
 		return
 	}
-	stmt.Close()
-	return
+	return tx.Commit()
 }
 
 func (r *postgresRepository) GetOrdersForAccount(ctx context.Context, accountID string) ([]Order, error) {
@@ -91,51 +94,94 @@ func (r *postgresRepository) GetOrdersForAccount(ctx context.Context, accountID 
 		return nil, err
 	}
 	defer rows.Close()
-	orders := []Order{}
-	lastOrder := &Order{}
-	orderedProduct := &OrderedProduct{}
-	products := []OrderedProduct{}
+
+	orderMap := make(map[string]*Order)
 
 	for rows.Next() {
-		if err = rows.Scan(
-			&order.ID,
-			&order.CreatedAt,
-			&order.AccountID,
-			&order.TotalPrice,
-			&orderedProduct.ID,
-			&orderedProduct.Quantity,
-		); err != nil {
+		var (
+			id, accountID string
+			createdAt     sql.NullTime
+			totalPrice    sql.NullFloat64
+			productID     string
+			quantity      int
+		)
+		if err := rows.Scan(&id, &createdAt, &accountID, &totalPrice, &productID, &quantity); err != nil {
 			return nil, err
 		}
-		if lastOrder.ID != "" && lastOrder.ID != order.ID {
-			newOrder := Order{
-				ID:         lastOrder.ID,
-				AccountID:  lastOrder.AccountID,
-				CreatedAt:  lastOrder.CreatedAt,
-				TotalPrice: lastOrder.TotalPrice,
-				Products:   lastOrder.Products,
+		order, exists := orderMap[id]
+		if !exists {
+			order = &Order{
+				ID:         id,
+				AccountID:  accountID,
+				CreatedAt:  createdAt.Time,
+				TotalPrice: totalPrice.Float64,
+				Products:   []OrderedProduct{},
 			}
-			orders = append(orders, newOrder)
-			products = []OrderedProduct{}
+			orderMap[id] = order
 		}
-		products = append(products, OrderedProduct{
-			ID:       orderedProduct.ID,
-			Quantity: orderedProduct.Quantity,
+		order.Products = append(order.Products, OrderedProduct{
+			ID:       productID,
+			Quantity: uint32(quantity),
 		})
-		*lastOrder = *order
 	}
-	if lastOrder != nil {
-		newOrder := Order{
-			ID:         lastOrder.ID,
-			AccountID:  lastOrder.AccountID,
-			CreatedAt:  lastOrder.CreatedAt,
-			TotalPrice: lastOrder.TotalPrice,
-			Products:   lastOrder.Products,
-		}
-		orders = append(orders, newOrder)
-	}
-	if err = rows.Err(); err != nil {
+
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
+	var orders []Order
+
+	for _, order := range orderMap {
+		orders = append(orders, *order)
+	}
+
 	return orders, nil
+	// orders := []Order{}
+	// order := &Order{}
+	// lastOrder := &Order{}
+	// orderedProduct := &OrderedProduct{}
+	// products := []OrderedProduct{}
+
+	// for rows.Next() {
+	// 	if err = rows.Scan(
+	// 		&order.ID,
+	// 		&order.CreatedAt,
+	// 		&order.AccountID,
+	// 		&order.TotalPrice,
+	// 		&orderedProduct.ID,
+	// 		&orderedProduct.Quantity,
+	// 	); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	if lastOrder.ID != "" && lastOrder.ID != order.ID {
+	// 		newOrder := Order{
+	// 			ID:         lastOrder.ID,
+	// 			AccountID:  lastOrder.AccountID,
+	// 			CreatedAt:  lastOrder.CreatedAt,
+	// 			TotalPrice: lastOrder.TotalPrice,
+	// 			Products:   lastOrder.Products,
+	// 		}
+	// 		orders = append(orders, newOrder)
+	// 		products = []OrderedProduct{}
+	// 	}
+	// 	products = append(products, OrderedProduct{
+	// 		ID:       orderedProduct.ID,
+	// 		Quantity: orderedProduct.Quantity,
+	// 	})
+	// 	*lastOrder = *order
+	// }
+	// if lastOrder != nil {
+	// 	newOrder := Order{
+	// 		ID:         lastOrder.ID,
+	// 		AccountID:  lastOrder.AccountID,
+	// 		CreatedAt:  lastOrder.CreatedAt,
+	// 		TotalPrice: lastOrder.TotalPrice,
+	// 		Products:   lastOrder.Products,
+	// 	}
+	// 	orders = append(orders, newOrder)
+	// }
+	// if err = rows.Err(); err != nil {
+	// 	return nil, err
+	// }
+	// return orders, nil
 }

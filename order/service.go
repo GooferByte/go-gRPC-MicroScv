@@ -44,7 +44,7 @@ func (s orderService) PostOrder(ctx context.Context, accountID string, products 
 	}
 	o.TotalPrice = 0.0
 	for _, p := range products {
-		o.Total += p.Price * float64(p.Quantity)
+		o.TotalPrice += p.Price * float64(p.Quantity)
 	}
 	err := s.repository.PutOrder(ctx, *o)
 	if err != nil {

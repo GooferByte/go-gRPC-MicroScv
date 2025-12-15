@@ -49,14 +49,14 @@ func ListenGRPC(s Service, accountURL, catalogURL string, port int) error {
 }
 
 func (s *grpcServer) PostOrder(ctx context.Context, r *pb.PostOrderRequest) (*pb.PostOrderResponse, error) {
-	_, err := s.accountClient.GetAccount(ctx, r.AccountID)
+	_, err := s.accountClient.GetAccount(ctx, r.AccountId)
 	if err != nil {
 		log.Println("Error getting account:", err)
-		return nil, error.New("account not found")
+		return nil, errors.New("account not found")
 	}
 
 	productIDs := []string{}
-	orderedProducts, err := s.catalog.Client.GetProducts(ctx, 0, 0, productIDs, "")
+	orderedProducts, err := s.catalogClient.GetProducts(ctx, 0, 0, productIDs, "")
 	if err != nil {
 		log.Println("Error getting products: ", err)
 		return nil, errors.New("products not foundß")
@@ -107,7 +107,7 @@ func (s *grpcServer) PostOrder(ctx context.Context, r *pb.PostOrderRequest) (*pb
 }
 
 func (s *grpcServer) GetOrderForAccount(ctx context.Context, r *pb.GetOrdersForAccountRequest) (*pb.GetOrdersForAccountResponse, error) {
-	accountOrders, err := s.service.GetOrderForAccount(ctx, r.AccountId)
+	accountOrders, err := s.service.GetOrdersForAccount(ctx, r.AccountId)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -123,25 +123,27 @@ func (s *grpcServer) GetOrderForAccount(ctx context.Context, r *pb.GetOrdersForA
 	for id := range productIDMap {
 		productIDs = append(productIDs, id)
 	}
-	products, err := s.catalogGetProducts(ctx, 0, 0, productIDs, "")
+	products, err := s.catalogClient.GetProducts(ctx, 0, 0, productIDs, "")
 	if err != nil {
 		log.Println("Error getting account products: ", err)
 		return nil, err
 	}
 	orders := []*pb.Order{}
-	for _, o := range accountOrders {
-		op := &pb.Order{
-			AccountId:  o.AccountID,
-			Id:         o.ID,
-			TotalPrice: o.TotalPrice,
-			Protucts:   []*pb.Order_OrderProduct{},
-		}
-		op.CreatedAt, _ = O.createdAt.MarshalBinary()
+		for _, o := range accountOrders {
+			op := &pb.Order{
+				AccountId:  o.AccountID,
+				Id:         o.ID,
+				TotalPrice: o.TotalPrice,
+				Products:   []*pb.Order_OrderProduct{},
+			}
+			if b, err := o.CreatedAt.MarshalBinary(); err == nil {
+				op.CreatedAt = b
+			}
 
 		for _, product := range o.Products {
 			for _, p := range products {
 				if p.ID == product.ID {
-					product.Next = p.Name
+					product.Name = p.Name
 					product.Description = p.Description
 					product.Price = p.Price
 					break
