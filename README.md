@@ -1,22 +1,143 @@
-# Schema & Validation Design
+# go-gRPC-MicroSvc
 
-## Fields (purpose)
-- `invoice_number`: Unique identifier assigned by the seller for traceability.
-- `invoice_date`: Date the invoice is issued; anchors payment terms and timelines.
-- `seller_name` / `buyer_name`: Parties to the transaction for billing and compliance.
-- `currency`: Currency code (e.g., USD, EUR, GBP, INR) to interpret monetary fields.
-- `line_items[]`: Collection of billed items; each has `description`, `quantity`, and `unit_price`.
-- `net_total`: Sum of all line item totals before tax or fees.
-- `tax_amount`: Total tax applied to the invoice.
-- `gross_total`: Final amount due (net total plus tax).
-- `due_date`: When payment is expected; derived from terms.
+GraphQL gateway in front of three gRPC microservices (account, catalog, order). The GraphQL server listens on port **8000** in the container and is mapped to host **8080** via docker-compose.
 
-## Validation Rules (with rationale)
-- Completeness: `invoice_number`, `invoice_date`, `seller_name`, `buyer_name`, and at least one `line_item` must be present to make the invoice actionable and auditable.
-- Format: `invoice_date` and `due_date` must parse as valid dates within a sensible range (2000-01-01 to 2100-01-01) to avoid bad inputs and temporal anomalies.
-- Format: `currency` must be in an allowed set (USD, EUR, GBP, INR, etc.) so downstream systems price correctly.
-- Business: Sum of line item totals (`quantity * unit_price`) must equal `net_total` within a small tolerance to detect math or entry errors.
-- Business: `gross_total` must equal `net_total + tax_amount` within tolerance to ensure totals roll up properly.
-- Business: `due_date` must be on or after `invoice_date` so payment terms are non-negative.
-- Anomaly/Duplicate: No duplicate invoice with the same `(invoice_number, seller_name, invoice_date)` to prevent double billing.
-- Anomaly: Monetary totals (`net_total`, `gross_total`, `tax_amount`) must be non-negative and reasonable relative to line items to catch outliers or incorrect signs.
+## Running locally
+```bash
+# from repo root
+docker compose up -d --build
+
+# GraphQL endpoint & UI
+open http://localhost:8080/playground
+# or POST to http://localhost:8080/graphql
+```
+
+Environment (already provided in `.env`):
+```
+ACCOUNT_SERVICE_URL=account:8080
+CATALOG_SERVICE_URL=catalog:8080
+ORDER_SERVICE_URL=order:8080
+```
+
+## Core GraphQL operations
+Use these in Playground or any client. All examples assume the compose stack is running.
+
+### Query all accounts
+```graphql
+query {
+  accounts {
+    id
+    name
+  }
+}
+```
+
+### Create an account
+```graphql
+mutation {
+  createAccount(account: { name: "New Account" }) {
+    id
+    name
+  }
+}
+```
+
+### Create a product
+```graphql
+mutation {
+  createProduct(product: { name: "New Product", description: "A new product", price: 300 }) {
+    id
+    name
+    price
+  }
+}
+```
+
+### Create an order
+Replace the IDs with real ones returned from the mutations above.
+```graphql
+mutation {
+  createOrder(order: { accountId: "38qrf6QmzyFL9IoTPiz2HiQeAu4", products: [{ id: "38qztUuYG6alms3BD9hTVZ9hmlj", quantity: 2 }] }) {
+    id
+    totalPrice
+    products {
+      name
+      quantity
+    }
+  }
+}
+```
+
+### Get a specific account with its orders
+```graphql
+query {
+  accounts(id: "38qrf6QmzyFL9IoTPiz2HiQeAu4") {
+    name
+    orders {
+      id
+      createdAt
+      totalPrice
+      products {
+        name
+        quantity
+        price
+      }
+    }
+  }
+}
+```
+
+### Search products with pagination
+```graphql
+query {
+  products(pagination: { skip: 0, take: 5 }, query: "New") {
+    id
+    name
+    description
+    price
+  }
+}
+```
+
+### Additional useful examples
+- Single product by ID:
+```graphql
+query {
+  products(id: "PUT_PRODUCT_ID_HERE") {
+    id
+    name
+    price
+  }
+}
+```
+- Accounts with pagination:
+```graphql
+query {
+  accounts(pagination: { skip: 0, take: 10 }) {
+    id
+    name
+  }
+}
+```
+- Orders total for an account:
+```graphql
+query {
+  accounts(id: "38qrf6QmzyFL9IoTPiz2HiQeAu4") {
+    name
+    orders {
+      totalPrice
+    }
+  }
+}
+```
+
+## Service ports (inside compose)
+- account: 8080
+- catalog: 8080
+- order: 8080
+- graphql: 8000 (mapped to host 8080)
+
+## Troubleshooting tips
+- If GraphQL returns “internal system error”, check dependent services via `docker compose logs account|catalog|order`.
+- Ensure IDs are strings in mutations/queries (wrap with quotes).
+- If Elasticsearch (catalog_db) fails to start on ARM, `platform: linux/amd64` is already set in `docker-compose.yaml`.

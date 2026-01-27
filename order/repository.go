@@ -45,19 +45,21 @@ func (r *postgresRepository) PutOrder(ctx context.Context, o Order) (err error) 
 		}
 		err = tx.Commit()
 	}()
-	tx.ExecContext(
+	if _, err = tx.ExecContext(
 		ctx,
-		"INSERT INTO orders(id, created_at, account_id, total_price) VALUE ($1, $2, $3, $4)",
+		"INSERT INTO orders(id, created_at, account_id, total_price) VALUES ($1, $2, $3, $4)",
 		o.ID,
 		o.CreatedAt,
 		o.AccountID,
 		o.TotalPrice,
-	)
+	); err != nil {
+		return
+	}
 	if err != nil {
 		return
 	}
 
-	stmt, err := tx.PrepareContext(ctx, pq.CopyIn("order_products", "order_id", "product_id", "quantity"))
+	stmt, err := tx.PrepareContext(ctx, pq.CopyIn("orders_products", "order_id", "product_id", "quantity"))
 	if err != nil {
 		return err
 	}
@@ -72,7 +74,7 @@ func (r *postgresRepository) PutOrder(ctx context.Context, o Order) (err error) 
 	if _, err = stmt.ExecContext(ctx); err != nil {
 		return
 	}
-	return tx.Commit()
+	return
 }
 
 func (r *postgresRepository) GetOrdersForAccount(ctx context.Context, accountID string) ([]Order, error) {
@@ -85,8 +87,8 @@ func (r *postgresRepository) GetOrdersForAccount(ctx context.Context, accountID 
 		o.total_price::money::numeric::float8,
 		op.product_id,
 		op.quantity
-		FROM orders o JOIN order_products op ON(o.id = op.order_id)
-		WHERE o.account_id = $1,
+		FROM orders o JOIN orders_products op ON(o.id = op.order_id)
+		WHERE o.account_id = $1
 		ORDER BY o.id`,
 		accountID,
 	)

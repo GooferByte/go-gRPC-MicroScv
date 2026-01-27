@@ -1,15 +1,15 @@
-FROM golang:1.24-alpine3.19 AS build 
-# Build the order service binary with vendored dependencies
-RUN apk --no-cache add gcc g++ make ca-certificates
-WORKDIR /go/src/github.com/GooferByte/go-gRPC-MicroSvc
-COPY go.mod go.sum ./
-COPY vendor vendor
-COPY account account
-COPY catalog catalog
-COPY order order
-RUN GO111MODULE=on go build -mod vendor -o /go/bin/app ./order/cmd/order
+FROM golang:1.25-alpine AS build 
+# Build the order service binary
+RUN apk --no-cache add build-base ca-certificates
+WORKDIR /app
 
-FROM alpine:3.11
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN go build -o /go/bin/app ./order/cmd/order
+
+FROM alpine:3.19
 # Minimal runtime image for the compiled binary
 WORKDIR /usr/bin
 COPY --from=build /go/bin .

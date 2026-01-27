@@ -1,0 +1,30 @@
+# OS files
+.DS_Store
+
+# Editor & IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Go build artifacts
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Logs & coverage
+*.log
+*.cover
+*.coverprofile
+coverage.*
+
+# Temporary files
+tmp/
+
+# Local environment
+.env
