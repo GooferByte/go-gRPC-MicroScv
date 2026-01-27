@@ -21,8 +21,13 @@ type Order struct {
 }
 
 type OrderInput struct {
-	AccountID string                 `json:"accountId"`
-	Products  []*OrderedProductInput `json:"products"`
+	AccountID string               `json:"accountId"`
+	Products  []*OrderProductInput `json:"products"`
+}
+
+type OrderProductInput struct {
+	ID       string `json:"id"`
+	Quantity int    `json:"quantity"`
 }
 
 type OrderedProduct struct {
@@ -31,11 +36,6 @@ type OrderedProduct struct {
 	Description string  `json:"description"`
 	Price       float64 `json:"price"`
 	Quantity    int     `json:"quantity"`
-}
-
-type OrderedProductInput struct {
-	ID       string `json:"id"`
-	Quantity int    `json:"quantity"`
 }
 
 type PaginationInput struct {
